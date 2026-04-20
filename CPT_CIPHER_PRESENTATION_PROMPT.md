@@ -78,7 +78,7 @@ Decrypt: `R = REVERSE(C)` → `S = RAIL_FENCE_DECODE(R, r)` → Vigenère decryp
 - Run: `python cpt_cipher.py`.
 - Self-check runs once at startup.
 - Menu: **Encrypt** / **Decrypt** / **Exit**.
-- Encrypt prompts: phrase → **keyword** → **numeric key for the extra layer** (this is `r`; Enter = 3). Output line: **`Encryption: '...'`**.
+- Encrypt prompts: phrase → **keyword** → **numeric key for the extra layer** (this is `r`; whole number ≥ 2; blank line still defaults to **3** in code). Output line: **`Encryption: '...'`**.
 - Decrypt prompts: ciphertext → **same keyword** → **same numeric key**. Output: **`Decryption: '...'`**.
 
 ## Suggested slide outline (adapt as needed)

@@ -294,7 +294,7 @@ def _run_menu() -> None:
                 word = input("Enter a word or phrase to encrypt: ").strip()
                 key = input("Keyword (letters only count; non-letters ignored): ").strip()
                 rails_in = input(
-                    "Numeric key for the extra layer (whole number ≥ 2, Enter = 3): "
+                    "Numeric key for the extra layer (whole number ≥ 2): "
                 ).strip()
                 rails = _parse_rails_input(rails_in, 3)
                 ciphertext = hybrid_encrypt(word, key, rails)
@@ -307,7 +307,7 @@ def _run_menu() -> None:
                 cipher = input("Enter ciphertext to decrypt: ").strip()
                 key = input("Same keyword as when you encrypted: ").strip()
                 rails_in = input(
-                    "Same numeric key as when you encrypted (Enter = 3): "
+                    "Same numeric key as when you encrypted (whole number ≥ 2): "
                 ).strip()
                 rails = _parse_rails_input(rails_in, 3)
                 plain = hybrid_decrypt(cipher, key, rails)
