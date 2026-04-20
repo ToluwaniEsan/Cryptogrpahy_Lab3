@@ -10,7 +10,7 @@ This project implements a **two-stage classical cipher** in Python:
 
 **Decryption** reverses that order: Vigenere decrypt, then inverse substitution. You can use either a **pipeline** of functions or **combined** encrypt/decrypt helpers.
 
-Formal step-by-step algorithms (encryption and decryption only): **[ALGORITHMS.md](ALGORITHMS.md)**.
+Formal pseudocode (same style as the lab PDF): **[ALGORITHMS.md](ALGORITHMS.md)**. Optional notes tying the spec to the script: **[EXPLANATION.md](EXPLANATION.md)**.
 
 ## Features
 
@@ -24,7 +24,8 @@ Formal step-by-step algorithms (encryption and decryption only): **[ALGORITHMS.m
 ## Files
 
 - **[substitution_vigenere_cipher.py](substitution_vigenere_cipher.py)**: affine substitution, Vigenere, combined encrypt/decrypt, interactive menu (replaces the older `substitution.py` prototype).
-- **[ALGORITHMS.md](ALGORITHMS.md)**: encryption and decryption algorithms only (no commentary).
+- **[ALGORITHMS.md](ALGORITHMS.md)**: `ENCRYPT`, `DECRYPT`, `MODULAR_INVERSE`, and utility definitions (pseudocode only).
+- **[EXPLANATION.md](EXPLANATION.md)**: short notes on how the spec maps to the Python implementation (optional).
 - **README.md**: This file.
 - **`.gitignore`**: ignores Python bytecode caches.
 
