@@ -1,4 +1,4 @@
-"""Hybrid cipher: length-keyed affine substitution (always reversible mod 26) then Vigenere."""
+"""Hybrid cipher: affine substitution, Vigenere, Rail Fence transposition, then full-string reverse."""
 
 from __future__ import annotations
 
@@ -131,56 +131,153 @@ def vigenere_decrypt(text: str, key: str) -> str:
     return _vigenere_decrypt(text, _sanitized_vigenere_key(key))
 
 
-def encrypt_substitution_then_vigenere(plaintext: str, key: str) -> str:
-    """Compose: substitution on space-stripped text, then Vigenere."""
-    return vigenere_encrypt(custom_substitution_cipher(plaintext), key)
+def _rail_pattern_indices(length: int, rails: int) -> list[int]:
+    """Rail index for each position in a zigzag of given length."""
+    pattern: list[int] = []
+    rail = 0
+    dir_down = True
+    for _ in range(length):
+        pattern.append(rail)
+        if rail == 0:
+            dir_down = True
+        elif rail == rails - 1:
+            dir_down = False
+        rail += 1 if dir_down else -1
+    return pattern
 
 
-def combined_substitution_vigenere_encrypt(text: str, key: str) -> str:
+def _rail_fence_encode(text: str, rails: int) -> str:
+    """Rail Fence transposition: zigzag write, read rows top to bottom."""
+    if rails < 2:
+        raise ValueError("rails must be at least 2")
+    if not text:
+        return ""
+    rows: list[list[str]] = [[] for _ in range(rails)]
+    rail = 0
+    dir_down = True
+    for ch in text:
+        rows[rail].append(ch)
+        if rail == 0:
+            dir_down = True
+        elif rail == rails - 1:
+            dir_down = False
+        rail += 1 if dir_down else -1
+    return "".join("".join(row) for row in rows)
+
+
+def _rail_fence_decode(cipher: str, rails: int) -> str:
+    """Inverse of _rail_fence_encode with the same rails and length."""
+    if rails < 2:
+        raise ValueError("rails must be at least 2")
+    if not cipher:
+        return ""
+    n = len(cipher)
+    pattern = _rail_pattern_indices(n, rails)
+    counts = [0] * rails
+    for p in pattern:
+        counts[p] += 1
+    chunks: list[list[str]] = []
+    idx = 0
+    for c in counts:
+        chunks.append(list(cipher[idx : idx + c]))
+        idx += c
+    ptrs = [0] * rails
+    out: list[str] = []
+    for r in pattern:
+        out.append(chunks[r][ptrs[r]])
+        ptrs[r] += 1
+    return "".join(out)
+
+
+def _reverse_layer(s: str) -> str:
+    """Full string reversal (permutation layer)."""
+    return s[::-1]
+
+
+def hybrid_encrypt(plaintext: str, key: str, rails: int = 3) -> str:
     """
-    Same result as the pipeline, in one function: clean -> substitution -> Vigenere.
-    Does not call vigenere_encrypt; uses shared _vigenere_apply for identical behavior.
+    Full encrypt: affine substitution -> Vigenere -> Rail Fence -> reverse.
+    spaces removed at the start; decrypt recovers space-free plaintext.
+    """
+    if not isinstance(plaintext, str):
+        raise TypeError("plaintext must be a str")
+    if rails < 2:
+        raise ValueError("rails must be at least 2")
+    after_sub_vig = vigenere_encrypt(custom_substitution_cipher(plaintext), key)
+    fenced = _rail_fence_encode(after_sub_vig, rails)
+    return _reverse_layer(fenced)
+
+
+def hybrid_decrypt(ciphertext: str, key: str, rails: int = 3) -> str:
+    """Full decrypt: un-reverse -> Rail Fence decode -> Vigenere decrypt -> inverse affine."""
+    if not isinstance(ciphertext, str):
+        raise TypeError("ciphertext must be a str")
+    if rails < 2:
+        raise ValueError("rails must be at least 2")
+    unrev = _reverse_layer(ciphertext)
+    after_rail = _rail_fence_decode(unrev, rails)
+    after_vig = vigenere_decrypt(after_rail, key)
+    return _substitution_inverse_on_clean(after_vig)
+
+
+def combined_hybrid_encrypt(text: str, key: str, rails: int = 3) -> str:
+    """
+    Same as hybrid_encrypt without calling vigenere_encrypt: inlines _vigenere_apply.
     """
     if not isinstance(text, str):
         raise TypeError("text must be a str")
+    if rails < 2:
+        raise ValueError("rails must be at least 2")
     key_letters = _sanitized_vigenere_key(key)
-    after_substitution = _substitution_on_clean(text.replace(" ", ""))
-    return _vigenere_apply(after_substitution, key_letters)
+    s = _substitution_on_clean(text.replace(" ", ""))
+    s = _vigenere_apply(s, key_letters)
+    s = _rail_fence_encode(s, rails)
+    return _reverse_layer(s)
 
 
-def decrypt_substitution_then_vigenere(ciphertext: str, key: str) -> str:
-    """Inverse of encrypt: Vigenere decrypt, then inverse substitution (space-free plaintext)."""
-    if not isinstance(ciphertext, str):
-        raise TypeError("ciphertext must be a str")
-    after_vig = vigenere_decrypt(ciphertext, key)
-    return _substitution_inverse_on_clean(after_vig)
-
-
-def combined_substitution_vigenere_decrypt(ciphertext: str, key: str) -> str:
+def combined_hybrid_decrypt(ciphertext: str, key: str, rails: int = 3) -> str:
     """
-    Same result as the pipeline decrypt, in one path: Vigenere decrypt then inverse substitution.
-    Does not call vigenere_decrypt; uses _vigenere_decrypt for identical behavior.
+    Same as hybrid_decrypt without calling vigenere_decrypt; uses _vigenere_decrypt.
     """
     if not isinstance(ciphertext, str):
         raise TypeError("ciphertext must be a str")
+    if rails < 2:
+        raise ValueError("rails must be at least 2")
     key_letters = _sanitized_vigenere_key(key)
-    after_vig = _vigenere_decrypt(ciphertext, key_letters)
-    return _substitution_inverse_on_clean(after_vig)
+    s = _reverse_layer(ciphertext)
+    s = _rail_fence_decode(s, rails)
+    s = _vigenere_decrypt(s, key_letters)
+    return _substitution_inverse_on_clean(s)
 
 
 def _self_check_round_trip() -> None:
     plain, k = "Hello World", "KEY"
+    rails = 3
     clean = plain.replace(" ", "")
-    c = encrypt_substitution_then_vigenere(plain, k)
-    d1 = decrypt_substitution_then_vigenere(c, k)
-    d2 = combined_substitution_vigenere_decrypt(c, k)
+    c = hybrid_encrypt(plain, k, rails)
+    d1 = hybrid_decrypt(c, k, rails)
+    d2 = combined_hybrid_decrypt(c, k, rails)
     expected = "".join(ch.upper() if _as_latin_upper_letter(ch) is not None else ch for ch in clean)
     assert d1 == d2 == expected
+    assert c == combined_hybrid_encrypt(plain, k, rails)
     assert vigenere_decrypt(vigenere_encrypt("ABC", k), k) == "ABC"
+    # rail round-trip without other layers
+    rf = _rail_fence_encode("abcdefghij", 3)
+    assert _rail_fence_decode(rf, 3) == "abcdefghij"
+
+
+def _parse_rails_input(raw: str, default: int = 3) -> int:
+    raw = raw.strip()
+    if not raw:
+        return default
+    r = int(raw)
+    if r < 2:
+        raise ValueError("rails must be an integer >= 2")
+    return r
 
 
 def _run_menu() -> None:
-    print("Hybrid cipher: affine substitution then Vigenere.")
+    print("Hybrid cipher: affine -> Vigenere -> Rail Fence -> reverse.")
     while True:
         print()
         print("  1 = Encrypt")
@@ -196,15 +293,20 @@ def _run_menu() -> None:
             try:
                 word = input("Enter a word or phrase to encrypt: ").strip()
                 key = input("Enter a Vigenere key (non-letters ignored): ").strip()
+                rails_in = input("Number of rails (>=2, default 3): ").strip()
+                rails = _parse_rails_input(rails_in, 3)
                 substitution_only = custom_substitution_cipher(word)
-                pipeline = encrypt_substitution_then_vigenere(word, key)
-                blended = combined_substitution_vigenere_encrypt(word, key)
+                after_vig = vigenere_encrypt(substitution_only, key)
+                before_rev = _rail_fence_encode(after_vig, rails)
+                pipeline = hybrid_encrypt(word, key, rails)
+                blended = combined_hybrid_encrypt(word, key, rails)
                 print(f"Original: '{word}'")
                 print(f"Length (no spaces): {len(word.replace(' ', ''))}")
                 print(f"After substitution only: '{substitution_only}'")
-                print(f"Pipeline ciphertext: '{pipeline}'")
-                print(f"Blended encrypt: '{blended}'")
-                print(f"Pipeline and blended match: {pipeline == blended}")
+                print(f"After Vigenere: '{after_vig}'")
+                print(f"After Rail Fence (before reverse): '{before_rev}'")
+                print(f"Final ciphertext: '{pipeline}'")
+                print(f"Combined encrypt matches pipeline: {pipeline == blended}")
             except (TypeError, ValueError) as e:
                 print(f"Error: {e}")
 
@@ -212,8 +314,10 @@ def _run_menu() -> None:
             try:
                 cipher = input("Enter ciphertext to decrypt: ").strip()
                 key = input("Enter the same Vigenere key: ").strip()
-                plain = decrypt_substitution_then_vigenere(cipher, key)
-                plain_alt = combined_substitution_vigenere_decrypt(cipher, key)
+                rails_in = input("Same number of rails as encryption (default 3): ").strip()
+                rails = _parse_rails_input(rails_in, 3)
+                plain = hybrid_decrypt(cipher, key, rails)
+                plain_alt = combined_hybrid_decrypt(cipher, key, rails)
                 print(f"Recovered (spaces not restored): '{plain}'")
                 print(f"Combined decrypt matches pipeline: {plain == plain_alt}")
             except (TypeError, ValueError) as e:

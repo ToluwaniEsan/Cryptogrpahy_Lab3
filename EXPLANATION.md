@@ -1,48 +1,41 @@
 # Explanation (readable overview)
 
-The exact pseudocode lives in **[ALGORITHMS.md](ALGORITHMS.md)**. This page gives short definitions and a bird’s-eye view of [**substitution_vigenere_cipher.py**](substitution_vigenere_cipher.py)—enough to read the lab without drowning in detail.
+The exact pseudocode is **[ALGORITHMS.md](ALGORITHMS.md)**. This page summarizes [**substitution_vigenere_cipher.py**](substitution_vigenere_cipher.py) without repeating every formula.
 
 ---
 
 ## Keywords (what the words usually mean)
 
-**Affine cipher** — In cryptography, a substitution where each letter (as a number 0–25) is transformed by a **linear rule** `y = (a·x + b) mod m`. “Affine” means linear (scale by `a`, shift by `b`). Our `m` is **26** (the Latin alphabet).
+**Affine cipher** — Substitution using a linear rule on letter indices: `y = (a·x + b) mod 26`.
 
-**Unit / invertible modulo 26** — A number `a` is usable as the multiplier only if decryption can undo it: there must exist `a⁻¹` with `(a·a⁻¹) mod 26 = 1`. That works when `a` shares no factors with 26 (odd and not divisible by **13**). Our code picks `a` from a fixed list of such values.
+**Vigenère cipher** — Polyalphabetic substitution: add a repeating key shift (mod 26) per letter; decrypt subtracts the shift. Non-letters skip the key stream.
 
-**Modular inverse** — For a fixed modulus (here **26**), `a⁻¹` is the integer in `1…25` that “undoes” multiplication by `a` modulo 26. The program finds it by trial; see `MODULAR_INVERSE` in ALGORITHMS.md.
+**Rail Fence cipher** — **Transposition:** characters are written in a zigzag across several horizontal “rails,” then read off row-by-row. Order changes; symbols stay the same until earlier stages changed them.
 
-**Vigenère cipher** — A polyalphabetic cipher: you **add** a repeating key letter (as a shift 0–25) to each plaintext letter modulo 26. Decrypting **subtracts** the same shift. Non-letters don’t use a key letter and don’t advance the key position.
+**Reverse (full string)** — **Transposition:** position `i` swaps with position `length − 1 − i`. Another reordering layer.
 
-**Plaintext / ciphertext** — Plaintext is the message you start from; ciphertext is the scrambled output. Here, “substitution output” is an intermediate string between the two stages.
+**Substitution vs permutation** — **Substitution** replaces symbols (affine, Vigenère). **Permutation** reorders positions (Rail Fence, reverse).
 
-**Key (sanitized)** — The user types any string; the program **keeps only `A`–`Z`**, in order, uppercased. If nothing is left, encryption/decryption cannot run and the program raises an error.
-
----
-
-## How the whole thing works
-
-**Input.** You give a **phrase** and a **keyword**. Spaces are **removed** from the phrase (they are not encrypted and are **lost**). Only ASCII **`A`–`Z`** are encrypted; digits and punctuation are copied through both stages unchanged.
-
-**Stage 1 — substitution.**  
-Let `n` be the length of the space-free string. The program chooses `a` from a length-dependent list and sets `b = n mod 26`. Each letter `A`–`Z` becomes another letter using the affine rule on indices 0–25. Result: an uppercase Latin stream (with other characters unchanged).
-
-**Stage 2 — Vigenère.**  
-That stream is mixed again: each `A`–`Z` is shifted forward by the current key letter; the key **repeats** when it runs out. Only letter positions consume key letters.
-
-**Decrypt.**  
-Run **backward**: undo Vigenère (subtract shifts), then undo the affine map with the **same** `n`, `a`, and `b` derived from the ciphertext length (which equals the old `n`).
-
-**What the code checks.**  
-- Arguments that must be strings use `isinstance(..., str)` where relevant.  
-- The Vigenère key must contain **at least one** letter after stripping non-letters.  
-- Invalid modular inverse should not happen for our fixed `a` values; if it did, you’d get a clear error.
-
-**Running as a script.**  
-A quick self-test runs first; then the menu lets you **encrypt**, **decrypt**, or **exit**. Decrypt prints the recovered text **without spaces** and with Latin letters in **uppercase**.
+**Sanitized key** — Only ASCII `A`–`Z` from the typed keyword, in order; at least one letter required.
 
 ---
 
-## Spec vs. this code
+## How the pipeline works
 
-The behavior matches **[ALGORITHMS.md](ALGORITHMS.md)**. The implementation identifies letters with a small helper so only plain ASCII `A`–`Z` are treated as alphabet letters (many symbols of other alphabets are left as-is rather than run through `str.upper()` globally). For typical English input, that matches “remove spaces, uppercase letters, encrypt.”
+**Encrypt chain:** remove spaces → affine substitution → Vigenère → Rail Fence (**`rails`** ≥ 2) → reverse entire string.
+
+**Decrypt chain (inverse order):** reverse → Rail Fence decode → Vigenère decrypt → inverse affine.
+
+You must use the **same** Vigenère key **and** the **same `rails`** value when decrypting. Default in the menu is **`rails = 3`** if you press Enter.
+
+**What gets transformed:** Affine and Vigenère affect only ASCII **`A`–`Z`** (normalized to uppercase). Digits and punctuation pass through those stages unchanged but are still permuted by Rail Fence and reverse.
+
+**Checks:** string types where required; key must retain at least one letter; **`rails ≥ 2`**; modular inverse for fixed `a` values should always exist.
+
+**Script:** A self-test runs at startup; the menu prompts for encrypt/decrypt/exit, and for **rails** on encrypt and decrypt.
+
+---
+
+## Spec vs this code
+
+Matches **[ALGORITHMS.md](ALGORITHMS.md)**. Letter detection uses a helper so only plain ASCII `A`–`Z` are treated as alphabet letters for the substitution and Vigenère steps.

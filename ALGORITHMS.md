@@ -1,6 +1,11 @@
-# Hybrid Substitution–Vigenère Cipher (Algorithm Specification)
+# Hybrid Substitution–Vigenère–Rail Fence Cipher (Algorithm Specification)
 
-### ALGORITHM: ENCRYPT(P, K)
+**Parameters:** plaintext `P`, Vigenère keyword `K`, integer **`rails ≥ 2`** (must be the same for decrypt).  
+**Full ciphertext** is produced after substitution, Vigenère, Rail Fence, and full-string reverse.
+
+---
+
+### ALGORITHM: ENCRYPT(P, K, rails)
 
 ```
 1.  clean ← REMOVE_SPACES(P)
@@ -9,71 +14,97 @@
 4.  candidates ← (1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25)
 5.  a ← candidates[n mod 12]
 6.  b ← n mod 26
-7.  S ← empty string
+7.  T ← empty string
 8.  for each character c in clean do
 9.      if c ∈ {A, …, Z} then
 10.         x ← ORD(c) − ORD('A')
 11.         y ← (a·x + b) mod 26
-12.         S ← S + CHAR(y + ORD('A'))
+12.         T ← T + CHAR(y + ORD('A'))
 13.     else
-14.         S ← S + c
+14.         T ← T + c
 15.     end if
 16. end for
 17. key_letters ← FILTER_LETTERS(K)
 18. key_letters ← TO_UPPERCASE(key_letters)
 19. key_len ← LENGTH(key_letters)
 20. key_index ← 0
-21. C ← empty string
-22. for each character c in S do
+21. S ← empty string
+22. for each character c in T do
 23.     if c ∈ {A, …, Z} then
 24.         p ← ORD(c) − ORD('A')
 25.         k ← ORD(key_letters[key_index mod key_len]) − ORD('A')
 26.         cipher_index ← (p + k) mod 26
-27.         C ← C + CHAR(cipher_index + ORD('A'))
+27.         S ← S + CHAR(cipher_index + ORD('A'))
 28.         key_index ← key_index + 1
 29.     else
-30.         C ← C + c
+30.         S ← S + c
 31.     end if
 32. end for
-33. return C
+33. R ← RAIL_FENCE_ENCODE(S, rails)
+34. C ← REVERSE(R)
+35. return C
 ```
 
-### ALGORITHM: DECRYPT(C, K)
+---
+
+### ALGORITHM: DECRYPT(C, K, rails)
 
 ```
-1.  n ← LENGTH(C)
-2.  key_letters ← FILTER_LETTERS(K)
-3.  key_letters ← TO_UPPERCASE(key_letters)
-4.  key_len ← LENGTH(key_letters)
-5.  key_index ← 0
-6.  S ← empty string
-7.  for each character c in C do
-8.      if c ∈ {A, …, Z} then
-9.          q ← ORD(c) − ORD('A')
-10.         k ← ORD(key_letters[key_index mod key_len]) − ORD('A')
-11.         plain_index ← (q − k) mod 26
-12.         S ← S + CHAR(plain_index + ORD('A'))
-13.         key_index ← key_index + 1
-14.     else
-15.         S ← S + c
-16.     end if
-17. end for
-18. candidates ← (1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25)
-19. a ← candidates[n mod 12]
-20. b ← n mod 26
-21. a_inv ← MODULAR_INVERSE(a, 26)
-22. P′ ← empty string
-23. for each character c in S do
-24.     if c ∈ {A, …, Z} then
-25.         y ← ORD(c) − ORD('A')
-26.         x ← (a_inv · (y − b)) mod 26
-27.         P′ ← P′ + CHAR(x + ORD('A'))
-28.     else
-29.         P′ ← P′ + c
-30.     end if
-31. end for
-32. return P′
+1.  R ← REVERSE(C)
+2.  S ← RAIL_FENCE_DECODE(R, rails)
+3.  n ← LENGTH(S)
+4.  key_letters ← FILTER_LETTERS(K)
+5.  key_letters ← TO_UPPERCASE(key_letters)
+6.  key_len ← LENGTH(key_letters)
+7.  key_index ← 0
+8.  T ← empty string
+9.  for each character c in S do
+10.     if c ∈ {A, …, Z} then
+11.         q ← ORD(c) − ORD('A')
+12.         k ← ORD(key_letters[key_index mod key_len]) − ORD('A')
+13.         plain_index ← (q − k) mod 26
+14.         T ← T + CHAR(plain_index + ORD('A'))
+15.         key_index ← key_index + 1
+16.     else
+17.         T ← T + c
+18.     end if
+19. end for
+20. candidates ← (1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25)
+21. a ← candidates[n mod 12]
+22. b ← n mod 26
+23. a_inv ← MODULAR_INVERSE(a, 26)
+24. P′ ← empty string
+25. for each character c in T do
+26.     if c ∈ {A, …, Z} then
+27.         y ← ORD(c) − ORD('A')
+28.         x ← (a_inv · (y − b)) mod 26
+29.         P′ ← P′ + CHAR(x + ORD('A'))
+30.     else
+31.         P′ ← P′ + c
+32.     end if
+33. end for
+34. return P′
 ```
+
+---
+
+### ALGORITHM: RAIL_FENCE_ENCODE(text, rails)
+
+Requires `rails ≥ 2`. Write each character of `text` along a zigzag across `rails` rows (bounce at top and bottom rows). Concatenate row 0, then row 1, …, row `rails−1` (left to right within each row).
+
+---
+
+### ALGORITHM: RAIL_FENCE_DECODE(cipher, rails)
+
+Requires `rails ≥ 2` and `LENGTH(cipher)` equals the encoded length. Reconstruct the zigzag slot pattern for that length, count how many characters belong on each rail, split `cipher` into those contiguous segments in row order, then read characters back in zigzag visit order to recover the string before Rail Fence encoding.
+
+---
+
+### ALGORITHM: REVERSE(s)
+
+Returns the characters of `s` in reverse order.
+
+---
 
 ### ALGORITHM: MODULAR_INVERSE(a, m)
 
@@ -85,6 +116,8 @@
 5. end for
 6. error "No modular inverse exists"
 ```
+
+---
 
 ### UTILITY DEFINITIONS
 
