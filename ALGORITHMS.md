@@ -1,4 +1,4 @@
-# Hybrid Substitution–Vigenère–Rail Fence Cipher (Algorithm Specification)
+# CPT Cipher — Cascade Polyalphabetic Transposition (Algorithm Specification)
 
 **Parameters**
 
@@ -170,7 +170,7 @@ Input: string `cipher`, integer **`r ≥ 2`**, where `cipher` was produced by `R
 
 ### Mapping to the Python program
 
-| Concept | In pseudocode | In [`substitution_vigenere_cipher.py`](substitution_vigenere_cipher.py) |
+| Concept | In pseudocode | In [`cpt_cipher.py`](cpt_cipher.py) |
 |--------|----------------|----------------------------------------------------------------------|
 | Full encrypt | ENCRYPT(P, K, r) | `hybrid_encrypt(plaintext, key, rails=r)` |
 | Full decrypt | DECRYPT(C, K, r) | `hybrid_decrypt(ciphertext, key, rails=r)` |

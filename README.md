@@ -23,7 +23,7 @@ Formal pseudocode: **[ALGORITHMS.md](ALGORITHMS.md)**. Readable notes: **[EXPLAN
 
 ## Files
 
-- **[substitution_vigenere_cipher.py](substitution_vigenere_cipher.py)** — CPT implementation and menu.
+- **[cpt_cipher.py](cpt_cipher.py)** — CPT implementation and menu.
 - **[ALGORITHMS.md](ALGORITHMS.md)** — pseudocode only.
 - **[EXPLANATION.md](EXPLANATION.md)** — short glossary and pipeline description.
 - **[CPT_CIPHER_PRESENTATION_PROMPT.md](CPT_CIPHER_PRESENTATION_PROMPT.md)** — ready-to-paste prompt for Gamma (or similar) to generate class slides.
@@ -39,7 +39,7 @@ Formal pseudocode: **[ALGORITHMS.md](ALGORITHMS.md)**. Readable notes: **[EXPLAN
 ## Running the program
 
 ```bash
-python substitution_vigenere_cipher.py
+python cpt_cipher.py
 ```
 
 Self-check runs first, then the menu (Encrypt / Decrypt / Exit). When decrypting, use the **same keyword** and **same numeric key** (second number) as for encryption; empty numeric input defaults to **3** on both sides.
@@ -47,7 +47,7 @@ Self-check runs first, then the menu (Encrypt / Decrypt / Exit). When decrypting
 ## Usage example
 
 ```python
-from substitution_vigenere_cipher import (
+from cpt_cipher import (
     hybrid_encrypt,
     hybrid_decrypt,
     combined_hybrid_encrypt,

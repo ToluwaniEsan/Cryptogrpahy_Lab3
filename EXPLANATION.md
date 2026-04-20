@@ -1,6 +1,6 @@
 # Explanation (readable overview)
 
-The canonical step-by-step math is **[ALGORITHMS.md](ALGORITHMS.md)**. This file summarizes [**substitution_vigenere_cipher.py**](substitution_vigenere_cipher.py): what each layer does, how parameters line up with the interactive prompts, and how substitution differs from permutation.
+The canonical step-by-step math is **[ALGORITHMS.md](ALGORITHMS.md)**. This file summarizes [**cpt_cipher.py**](cpt_cipher.py): what each layer does, how parameters line up with the interactive prompts, and how substitution differs from permutation.
 
 ---
 
@@ -34,7 +34,7 @@ The canonical step-by-step math is **[ALGORITHMS.md](ALGORITHMS.md)**. This file
 
 ---
 
-## Interactive program (`python substitution_vigenere_cipher.py`)
+## Interactive program (`python cpt_cipher.py`)
 
 1. A **self-check** runs once at startup (round-trip on a sample message).  
 2. The menu offers **Encrypt**, **Decrypt**, or **Exit**.  

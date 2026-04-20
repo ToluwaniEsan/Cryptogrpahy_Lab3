@@ -46,7 +46,7 @@ Short tagline suggestion: *“Multiple substitution and transposition layers in 
 ## Implementation (for “functioning program” slides)
 
 - **Language:** Python 3.
-- **Main file:** `substitution_vigenere_cipher.py` (contains the full CPT pipeline and interactive menu).
+- **Main file:** `cpt_cipher.py` (contains the full CPT pipeline and interactive menu).
 - **Supporting docs in repo:** `ALGORITHMS.md` (full pseudocode: ENCRYPT, DECRYPT, RAIL_FENCE_ENCODE, RAIL_FENCE_DECODE, REVERSE, MODULAR_INVERSE, utilities), `EXPLANATION.md` (readable overview), `README.md`.
 
 ### Public API (mention on architecture slide)
@@ -75,7 +75,7 @@ Decrypt: `R = REVERSE(C)` → `S = RAIL_FENCE_DECODE(R, r)` → Vigenère decryp
 
 ### Demo / program behavior (for live or screenshot slide)
 
-- Run: `python substitution_vigenere_cipher.py`.
+- Run: `python cpt_cipher.py`.
 - Self-check runs once at startup.
 - Menu: **Encrypt** / **Decrypt** / **Exit**.
 - Encrypt prompts: phrase → **keyword** → **numeric key for the extra layer** (this is `r`; Enter = 3). Output line: **`Encryption: '...'`**.
