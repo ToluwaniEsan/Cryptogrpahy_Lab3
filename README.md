@@ -1,194 +1,96 @@
-# Cryptography Lab 3: RSA Algorithm Implementation
+# Cryptography Lab 3: Substitution + Vigenere hybrid
 
 ## Overview
 
-This project implements the **RSA (Rivest–Shamir–Adleman)** cryptographic algorithm in Python. RSA is one of the most widely used asymmetric encryption algorithms that enables secure communication and digital signatures.
+This project implements a **two-stage classical cipher** in Python:
+
+1. **Length-keyed affine substitution** on the message with all spaces removed. Letters `A`–`Z` are mapped with `y = (a·x + b) mod 26` (with `x,y` in `0..25`), where `a` is chosen from fixed units modulo 26 so **decryption always exists**, and `b = n mod 26` for `n =` length of the cleaned string. Non-letters pass through unchanged.
+
+2. **Vigenere encryption** on the substitution output, using a repeating keyword (letters `A`–`Z` only; other characters in the key are ignored).
+
+**Decryption** reverses that order: Vigenere decrypt, then inverse substitution. You can use either a **pipeline** of functions or **combined** encrypt/decrypt helpers.
+
+Formal step-by-step algorithms (encryption and decryption only): **[ALGORITHMS.md](ALGORITHMS.md)**.
 
 ## Features
 
-- **Key Generation**: Generates large prime numbers and derives RSA public/private key pairs
-- **Encryption**: Encrypts messages using the public key
-- **Decryption**: Decrypts messages using the private key
-- **Primality Testing**: Uses Miller-Rabin probabilistic primality test
-- **Modular Arithmetic**: Implements extended Euclidean algorithm for modular inverse calculation
-- **Detailed Documentation**: Fully commented code with academic references
+- **Substitution stage**: affine cipher over `Z/26Z` with length-dependent `a` and `b`; always invertible for any message length (no `gcd(n, 26)` restriction).
+- **Vigenere stage**: standard additive cipher over `A`–`Z`; the key index advances only for ciphertext letters that are encrypted (non-letters pass through and do not consume key material).
+- **Decrypt API**: `vigenere_decrypt`, `decrypt_substitution_then_vigenere`, `combined_substitution_vigenere_decrypt` (combined decrypt does not call `vigenere_decrypt`; it mirrors the encrypt structure).
+- **Two API styles** for encrypt: `custom_substitution_cipher` + `vigenere_encrypt`, or `combined_substitution_vigenere_encrypt`.
+- **Interactive menu** (`python substitution_vigenere_cipher.py`): choose **Encrypt**, **Decrypt**, or **Exit**; after each result you return to the menu until you exit.
+- **Robust letter handling**: only ASCII `A`–`Z` are transformed; other Unicode letters are copied unchanged so behavior stays predictable for coursework.
 
 ## Files
 
-- **rsa.py**: Core RSA implementation with all cryptographic operations
-- **demo.py**: Demonstration script showing encryption/decryption of "Go Bulldogs."
-- **README.md**: This file
+- **[substitution_vigenere_cipher.py](substitution_vigenere_cipher.py)**: affine substitution, Vigenere, combined encrypt/decrypt, interactive menu (replaces the older `substitution.py` prototype).
+- **[ALGORITHMS.md](ALGORITHMS.md)**: encryption and decryption algorithms only (no commentary).
+- **README.md**: This file.
+- **`.gitignore`**: ignores Python bytecode caches.
 
-## Mathematical Background
+See **[ALGORITHMS.md](ALGORITHMS.md)** for full symbolic steps. Summary:
 
-### RSA Key Generation
+### Substitution (after removing spaces)
 
-1. Generate two large distinct prime numbers: **p** and **q**
-2. Calculate the modulus: **n = p × q**
-3. Calculate Euler's totient: **φ(n) = (p-1) × (q-1)**
-4. Choose public exponent **e** such that:
-   - 1 < e < φ(n)
-   - gcd(e, φ(n)) = 1
-   - Typically e = 65537
-5. Calculate private exponent **d** such that:
-   - (e × d) ≡ 1 (mod φ(n))
-   - d is calculated using the Extended Euclidean Algorithm
+Let `n` be the length of the cleaned string, `x` the numerical value of a plaintext letter (`A`→0, …, `Z`→25). Pick multiplier `a = candidates[n mod 12]` from `(1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25)` (all units mod 26). Let `b = n mod 26`.
 
-**Public Key**: (e, n)
-**Private Key**: (d, n)
+`y = (a·x + b) mod 26`, then map `y` back to `A`–`Z`.
 
-### Encryption
+Decryption: `x = (a⁻¹·(y − b)) mod 26` where `a⁻¹` is the modular inverse of `a` modulo 26.
 
-For plaintext message **m**, the ciphertext **c** is calculated as:
+If `n == 0`, the result is the empty string.
 
-**c ≡ m^e (mod n)**
+### Vigenere
 
-Each character is converted to its ASCII value and encrypted individually.
+Encryption: `C = chr((ord(P) - 65 + ord(K) - 65) mod 26 + 65)`.
 
-### Decryption
+Decryption: `P = chr((ord(C) - 65 - ord(K) - 65) mod 26 + 65)` (same key stepping as encrypt).
 
-For ciphertext **c**, the plaintext **m** is recovered as:
-
-**m ≡ c^d (mod n)**
-
-## Demo: "Go Bulldogs."
-
-### Running the Demonstration
+## Running the program
 
 ```bash
-python demo.py
+python substitution_vigenere_cipher.py
 ```
 
-This script will:
-1. Generate a new RSA key pair
-2. Display the public and private keys
-3. Encrypt the message "Go Bulldogs."
-4. Show the encrypted values
-5. Decrypt back to the original message
-6. Verify the decryption is correct
+On startup a small **self-check** runs (round-trip for a sample message, including length 10). Then you see a menu:
 
-### Expected Output Structure
+1. **Encrypt** — enter phrase and key; prints substitution-only output, pipeline ciphertext, blended ciphertext, and whether encrypt paths match.
+2. **Decrypt** — enter ciphertext and key; prints recovered text (**spaces are not restored**; letter case is uppercase for Latin letters). Also reports whether combined decrypt matches the pipeline.
+3. **Exit** — quit the program.
 
-```
-Step 1: Initialize RSA
-Step 2: Generate Key Pairs
-  Public Key (e, n): (65537, [large number])
-  Private Key (d, n): ([large number], [large number])
+You can also type `encrypt` / `decrypt` / `exit` (case-insensitive) instead of `1` / `2` / `3`.
 
-Step 3: Original Message
-  "Go Bulldogs."
-
-Step 4: Encryption
-  Encrypted values: [encrypted numbers]
-
-Step 5: Decryption
-  Decrypted Message: "Go Bulldogs."
-
-Step 6: Verification
-  ✓ SUCCESS: Messages match!
-```
-
-## Security Considerations
-
-This implementation is **for educational purposes only**. Key security notes:
-
-1. **Key Size**: Uses 128-bit keys for demonstration. Production systems should use:
-   - Minimum: 2048-bit RSA keys
-   - Recommended: 4096-bit RSA keys
-
-2. **Character Limitation**: This implementation encrypts each character individually. Large numbers greater than the modulus cannot be encrypted directly without padding schemes.
-
-3. **Padding**: Real-world implementations use padding schemes like:
-   - PKCS#1 v1.5
-   - Optimal Asymmetric Encryption Padding (OAEP)
-   - ISO/IEC 9796
-
-4. **Random Number Generation**: Uses Python's `random.getrandbits()`. For cryptographic applications, use `secrets` or `os.urandom()`.
-
-5. **Timing Attacks**: The simple modular exponentiation is vulnerable to timing attacks. Use constant-time implementations in production.
-
-## References
-
-1. **Original RSA Paper**:
-   - Rivest, R., Shamir, A., & Adleman, L. (1978). "A method for obtaining digital signatures and public-key cryptosystems." Communications of the ACM, 21(2), 120-126.
-
-2. **Standards**:
-   - RFC 3447: PKCS #1: RSA Cryptography Specifications Version 2.1
-   - NIST Special Publication 800-2: Number Theory: Number Theoretic Functions
-
-3. **Academic References**:
-   - Menezes, A. J., van Oorschot, P. C., & Vanstone, S. A. (1996). "Handbook of Applied Cryptography." CRC Press.
-   - Knuth, D. E. (1997). "The Art of Computer Programming, Volume 2: Seminumerical Algorithms."
-
-4. **Algorithms**:
-   - Miller-Rabin Primality Test: Miller, G. L., & Rabin, M. O. (1976). "Probabilistic algorithm for testing primality." Journal of Computer and System Sciences, 13(3), 300-317.
-   - Extended Euclidean Algorithm: Ancient mathematical algorithm, documented in Knuth (above)
-   - Modular Exponentiation: Binary exponentiation method for efficient computation
-
-## Implementation Details
-
-### Prime Generation
-- Uses Miller-Rabin primality test with k=40 rounds for high confidence
-- Generates random numbers with specified bit length
-- Ensures numbers are odd and have correct bit length
-
-### Modular Arithmetic
-- Extended Euclidean Algorithm finds modular inverse
-- Binary exponentiation for efficient modular exponentiation
-- Python's `pow(base, exp, mod)` for optimized computation
-
-### Key Generation Process
-```
-1. Generate prime p (128-bit)
-2. Generate prime q (128-bit, q ≠ p)
-3. Calculate n = p × q
-4. Calculate φ(n) = (p-1) × (q-1)
-5. Choose e = 65537 (or smaller if necessary)
-6. Calculate d = e^(-1) mod φ(n)
-7. Return public_key = (e, n), private_key = (d, n)
-```
-
-## Usage Example
+## Usage example
 
 ```python
-from rsa import RSA
+from substitution_vigenere_cipher import (
+    encrypt_substitution_then_vigenere,
+    decrypt_substitution_then_vigenere,
+    combined_substitution_vigenere_encrypt,
+    combined_substitution_vigenere_decrypt,
+)
 
-# Initialize RSA with 128-bit key size
-rsa = RSA(key_size=128)
+plain = "Hello World"
+key = "KEY"
 
-# Generate key pairs
-public_key, private_key = rsa.generate_keys()
+cipher = encrypt_substitution_then_vigenere(plain, key)
+assert cipher == combined_substitution_vigenere_encrypt(plain, key)
 
-# Message to encrypt
-message = "Go Bulldogs."
-
-# Encrypt
-ciphertext = rsa.encrypt(message)
-print(f"Encrypted: {ciphertext}")
-
-# Decrypt
-plaintext = rsa.decrypt(ciphertext)
-print(f"Decrypted: {plaintext}")
+recovered = decrypt_substitution_then_vigenere(cipher, key)
+assert recovered == combined_substitution_vigenere_decrypt(cipher, key)
+assert recovered == "HELLOWORLD"  # spaces not restored; Latin letters uppercase
 ```
 
-## Performance Metrics
+## Edge cases and errors
 
-For a 128-bit key size:
-- Key generation time: ~1-2 seconds
-- Encryption time: ~milliseconds per character
-- Decryption time: ~milliseconds per character
+- **`TypeError`**: `text`, `ciphertext`, or `key` is not a `str` where a string is required.
+- **`ValueError`**: Vigenere key contains no `A`–`Z` letters after sanitizing (or internal modular inverse failure, which should not occur for the fixed `a` values).
+- **Empty input**: Produces empty ciphertext; substitution length `n` is zero.
+- **Spaces and case**: Spaces are removed before encryption and are **not** recovered on decrypt. Latin letters are recovered in **uppercase**.
 
-**Note**: Increase key size for production use. Larger keys provide better security but slower execution.
+## Security note
 
-## Future Enhancements
-
-1. Implement OAEP padding scheme
-2. Support variable-length message encryption
-3. Add digital signature support
-4. Optimize using CRT (Chinese Remainder Theorem)
-5. Implement constant-time operations for timing attack resistance
-6. Add support for larger numbers using Python's unlimited precision
-7. Performance benchmarking and optimization
+This code is **for education only**. Classical ciphers are not suitable for protecting real data.
 
 ## Author
 
@@ -196,4 +98,4 @@ Cryptography Lab 3 - April 2026
 
 ## License
 
-Educational Use Only
+Educational use only.
