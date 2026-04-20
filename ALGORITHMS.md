@@ -1,11 +1,16 @@
 # Hybrid Substitution–Vigenère–Rail Fence Cipher (Algorithm Specification)
 
-**Parameters:** plaintext `P`, Vigenère keyword `K`, integer **`rails ≥ 2`** (must be the same for decrypt).  
-**Full ciphertext** is produced after substitution, Vigenère, Rail Fence, and full-string reverse.
+**Parameters**
+
+- `P` — plaintext string.  
+- `K` — Vigenère **keyword** (only `A`–`Z` are used, in order, after uppercasing).  
+- `r` (also written **`rails` in code**) — integer **≥ 2** that sets how many horizontal **rows** the Rail Fence zigzag uses. The same `r` is required to decrypt. In the interactive program this is the second, **numeric** input (default `3` if the user presses Enter). It is not the Vigenère keyword.
+
+**Output** — Ciphertext `C` after, in order: affine substitution on the space-free text, Vigenère, Rail Fence with `r` rows, then **reversal** of the full string.
 
 ---
 
-### ALGORITHM: ENCRYPT(P, K, rails)
+### ALGORITHM: ENCRYPT(P, K, r)
 
 ```
 1.  clean ← REMOVE_SPACES(P)
@@ -40,18 +45,18 @@
 30.         S ← S + c
 31.     end if
 32. end for
-33. R ← RAIL_FENCE_ENCODE(S, rails)
+33. R ← RAIL_FENCE_ENCODE(S, r)
 34. C ← REVERSE(R)
 35. return C
 ```
 
 ---
 
-### ALGORITHM: DECRYPT(C, K, rails)
+### ALGORITHM: DECRYPT(C, K, r)
 
 ```
 1.  R ← REVERSE(C)
-2.  S ← RAIL_FENCE_DECODE(R, rails)
+2.  S ← RAIL_FENCE_DECODE(R, r)
 3.  n ← LENGTH(S)
 4.  key_letters ← FILTER_LETTERS(K)
 5.  key_letters ← TO_UPPERCASE(key_letters)
@@ -88,21 +93,33 @@
 
 ---
 
-### ALGORITHM: RAIL_FENCE_ENCODE(text, rails)
+### ALGORITHM: RAIL_FENCE_ENCODE(text, r)
 
-Requires `rails ≥ 2`. Write each character of `text` along a zigzag across `rails` rows (bounce at top and bottom rows). Concatenate row 0, then row 1, …, row `rails−1` (left to right within each row).
+Requires integer **`r ≥ 2`**. Write each character of `text` along a zigzag across **`r`** rows (bounce at top and bottom rows). Concatenate row 0, then row 1, …, row **`r − 1`** (left to right within each row).
 
 ---
 
-### ALGORITHM: RAIL_FENCE_DECODE(cipher, rails)
+### ALGORITHM: RAIL_FENCE_DECODE(cipher, r)
 
-Requires `rails ≥ 2` and `LENGTH(cipher)` equals the encoded length. Reconstruct the zigzag slot pattern for that length, count how many characters belong on each rail, split `cipher` into those contiguous segments in row order, then read characters back in zigzag visit order to recover the string before Rail Fence encoding.
+Requires **`r ≥ 2`** and `LENGTH(cipher)` equals the encoded length. Reconstruct the zigzag slot pattern for that length, count how many characters belong on each rail, split `cipher` into those contiguous segments in row order, then read characters back in zigzag visit order to recover the string before Rail Fence encoding.
 
 ---
 
 ### ALGORITHM: REVERSE(s)
 
 Returns the characters of `s` in reverse order.
+
+---
+
+### Mapping to the Python program
+
+| Concept | In pseudocode | In [`substitution_vigenere_cipher.py`](substitution_vigenere_cipher.py) |
+|--------|----------------|----------------------------------------------------------------------|
+| Full encrypt | ENCRYPT(P, K, r) | `hybrid_encrypt(plaintext, key, rails=r)` |
+| Full decrypt | DECRYPT(C, K, r) | `hybrid_decrypt(ciphertext, key, rails=r)` |
+| Rail row count | `r` | Parameter name **`rails`** (must be ≥ 2; errors say **“Numeric key…”** in user-facing paths) |
+
+Menu flow: ask for text → **keyword** (`K`) → **numeric key for the extra layer** (this is **`r` / `rails`**; Enter uses default **3**). Decrypt asks for the **same keyword** and **same numeric key**. Only two lines are printed: **`Encryption:`** … and **`Decryption:`** ….
 
 ---
 

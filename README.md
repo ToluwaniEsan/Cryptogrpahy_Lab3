@@ -19,7 +19,7 @@ Formal pseudocode: **[ALGORITHMS.md](ALGORITHMS.md)**. Readable notes: **[EXPLAN
 - **Two permutation-style layers:** Rail Fence + full reverse (meets typical “substitution + permutation” lab wording when both are required).
 - **Public API:** `hybrid_encrypt` / `hybrid_decrypt`, plus `combined_hybrid_encrypt` / `combined_hybrid_decrypt` (inlined Vigenère, same results).
 - **Utilities:** `custom_substitution_cipher`, `vigenere_encrypt`, `vigenere_decrypt` for building blocks.
-- **Interactive menu** with **rails** prompt (default **3**); decrypt must use the **same key and rails** as encrypt.
+- **Interactive menu** — keyword, then a **numeric “extra layer” key** (integer ≥ 2, default **3**); decrypt must reuse the **same keyword and same number**. Output is only **`Encryption:`** / **`Decryption:`** lines.
 
 ## Files
 
@@ -41,7 +41,7 @@ Formal pseudocode: **[ALGORITHMS.md](ALGORITHMS.md)**. Readable notes: **[EXPLAN
 python substitution_vigenere_cipher.py
 ```
 
-Self-check runs first, then the menu (Encrypt / Decrypt / Exit). For decrypt, enter the **same Vigenère key** and **same number of rails** used when encrypting.
+Self-check runs first, then the menu (Encrypt / Decrypt / Exit). When decrypting, use the **same keyword** and **same numeric key** (second number) as for encryption; empty numeric input defaults to **3** on both sides.
 
 ## Usage example
 
@@ -68,7 +68,7 @@ assert recovered == "HELLOWORLD"  # spaces not restored; Latin letters uppercase
 ## Edge cases and errors
 
 - **`TypeError`**: wrong types for text/key where checked.
-- **`ValueError`**: empty key after letter filtering; **`rails < 2`**; invalid integer for rails in the menu.
+- **`ValueError`**: empty keyword after letter filtering; second parameter **< 2** or not a valid integer where a **numeric key** is read.
 - **Spaces / case**: spaces stripped before encrypt and not restored; Latin letters decrypt to **uppercase**.
 
 ## Security note

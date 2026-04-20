@@ -149,7 +149,7 @@ def _rail_pattern_indices(length: int, rails: int) -> list[int]:
 def _rail_fence_encode(text: str, rails: int) -> str:
     """Rail Fence transposition: zigzag write, read rows top to bottom."""
     if rails < 2:
-        raise ValueError("rails must be at least 2")
+        raise ValueError("Numeric key must be at least 2.")
     if not text:
         return ""
     rows: list[list[str]] = [[] for _ in range(rails)]
@@ -168,7 +168,7 @@ def _rail_fence_encode(text: str, rails: int) -> str:
 def _rail_fence_decode(cipher: str, rails: int) -> str:
     """Inverse of _rail_fence_encode with the same rails and length."""
     if rails < 2:
-        raise ValueError("rails must be at least 2")
+        raise ValueError("Numeric key must be at least 2.")
     if not cipher:
         return ""
     n = len(cipher)
@@ -202,7 +202,7 @@ def hybrid_encrypt(plaintext: str, key: str, rails: int = 3) -> str:
     if not isinstance(plaintext, str):
         raise TypeError("plaintext must be a str")
     if rails < 2:
-        raise ValueError("rails must be at least 2")
+        raise ValueError("Numeric key must be at least 2.")
     after_sub_vig = vigenere_encrypt(custom_substitution_cipher(plaintext), key)
     fenced = _rail_fence_encode(after_sub_vig, rails)
     return _reverse_layer(fenced)
@@ -213,7 +213,7 @@ def hybrid_decrypt(ciphertext: str, key: str, rails: int = 3) -> str:
     if not isinstance(ciphertext, str):
         raise TypeError("ciphertext must be a str")
     if rails < 2:
-        raise ValueError("rails must be at least 2")
+        raise ValueError("Numeric key must be at least 2.")
     unrev = _reverse_layer(ciphertext)
     after_rail = _rail_fence_decode(unrev, rails)
     after_vig = vigenere_decrypt(after_rail, key)
@@ -227,7 +227,7 @@ def combined_hybrid_encrypt(text: str, key: str, rails: int = 3) -> str:
     if not isinstance(text, str):
         raise TypeError("text must be a str")
     if rails < 2:
-        raise ValueError("rails must be at least 2")
+        raise ValueError("Numeric key must be at least 2.")
     key_letters = _sanitized_vigenere_key(key)
     s = _substitution_on_clean(text.replace(" ", ""))
     s = _vigenere_apply(s, key_letters)
@@ -242,7 +242,7 @@ def combined_hybrid_decrypt(ciphertext: str, key: str, rails: int = 3) -> str:
     if not isinstance(ciphertext, str):
         raise TypeError("ciphertext must be a str")
     if rails < 2:
-        raise ValueError("rails must be at least 2")
+        raise ValueError("Numeric key must be at least 2.")
     key_letters = _sanitized_vigenere_key(key)
     s = _reverse_layer(ciphertext)
     s = _rail_fence_decode(s, rails)
@@ -272,12 +272,12 @@ def _parse_rails_input(raw: str, default: int = 3) -> int:
         return default
     r = int(raw)
     if r < 2:
-        raise ValueError("rails must be an integer >= 2")
+        raise ValueError("Numeric key must be a whole number >= 2.")
     return r
 
 
 def _run_menu() -> None:
-    print("Hybrid cipher: affine -> Vigenere -> Rail Fence -> reverse.")
+    print("Encrypt or decrypt messages below.")
     while True:
         print()
         print("  1 = Encrypt")
@@ -292,34 +292,26 @@ def _run_menu() -> None:
         if choice in ("1", "encrypt", "e"):
             try:
                 word = input("Enter a word or phrase to encrypt: ").strip()
-                key = input("Enter a Vigenere key (non-letters ignored): ").strip()
-                rails_in = input("Number of rails (>=2, default 3): ").strip()
+                key = input("Keyword (letters only count; non-letters ignored): ").strip()
+                rails_in = input(
+                    "Numeric key for the extra layer (whole number ≥ 2, Enter = 3): "
+                ).strip()
                 rails = _parse_rails_input(rails_in, 3)
-                substitution_only = custom_substitution_cipher(word)
-                after_vig = vigenere_encrypt(substitution_only, key)
-                before_rev = _rail_fence_encode(after_vig, rails)
-                pipeline = hybrid_encrypt(word, key, rails)
-                blended = combined_hybrid_encrypt(word, key, rails)
-                print(f"Original: '{word}'")
-                print(f"Length (no spaces): {len(word.replace(' ', ''))}")
-                print(f"After substitution only: '{substitution_only}'")
-                print(f"After Vigenere: '{after_vig}'")
-                print(f"After Rail Fence (before reverse): '{before_rev}'")
-                print(f"Final ciphertext: '{pipeline}'")
-                print(f"Combined encrypt matches pipeline: {pipeline == blended}")
+                ciphertext = hybrid_encrypt(word, key, rails)
+                print(f"Encryption: '{ciphertext}'")
             except (TypeError, ValueError) as e:
                 print(f"Error: {e}")
 
         elif choice in ("2", "decrypt", "d"):
             try:
                 cipher = input("Enter ciphertext to decrypt: ").strip()
-                key = input("Enter the same Vigenere key: ").strip()
-                rails_in = input("Same number of rails as encryption (default 3): ").strip()
+                key = input("Same keyword as when you encrypted: ").strip()
+                rails_in = input(
+                    "Same numeric key as when you encrypted (Enter = 3): "
+                ).strip()
                 rails = _parse_rails_input(rails_in, 3)
                 plain = hybrid_decrypt(cipher, key, rails)
-                plain_alt = combined_hybrid_decrypt(cipher, key, rails)
-                print(f"Recovered (spaces not restored): '{plain}'")
-                print(f"Combined decrypt matches pipeline: {plain == plain_alt}")
+                print(f"Decryption: '{plain}'")
             except (TypeError, ValueError) as e:
                 print(f"Error: {e}")
 

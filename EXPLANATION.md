@@ -1,41 +1,50 @@
 # Explanation (readable overview)
 
-The exact pseudocode is **[ALGORITHMS.md](ALGORITHMS.md)**. This page summarizes [**substitution_vigenere_cipher.py**](substitution_vigenere_cipher.py) without repeating every formula.
+The canonical step-by-step math is **[ALGORITHMS.md](ALGORITHMS.md)**. This file summarizes [**substitution_vigenere_cipher.py**](substitution_vigenere_cipher.py): what each layer does, how parameters line up with the interactive prompts, and how substitution differs from permutation.
 
 ---
 
 ## Keywords (what the words usually mean)
 
-**Affine cipher** — Substitution using a linear rule on letter indices: `y = (a·x + b) mod 26`.
+**Affine cipher** — Substitution on letter indices using a linear rule modulo 26: scale by `a`, add `b`, both derived from message length.
 
-**Vigenère cipher** — Polyalphabetic substitution: add a repeating key shift (mod 26) per letter; decrypt subtracts the shift. Non-letters skip the key stream.
+**Vigenère cipher** — Polyalphabetic substitution: each `A`–`Z` letter is shifted by the current keyword letter (mod 26); decrypt subtracts that shift. Non-letters do not consume keyword letters.
 
-**Rail Fence cipher** — **Transposition:** characters are written in a zigzag across several horizontal “rails,” then read off row-by-row. Order changes; symbols stay the same until earlier stages changed them.
+**Rail Fence cipher** — **Transposition:** the string is laid out in a zigzag across **`r`** horizontal rows (`r ≥ 2`), then read row-by-row. Characters move position; values at each step come from prior layers.
 
-**Reverse (full string)** — **Transposition:** position `i` swaps with position `length − 1 − i`. Another reordering layer.
+**Full-string reverse** — **Transposition:** reverses character order end-to-end.
 
-**Substitution vs permutation** — **Substitution** replaces symbols (affine, Vigenère). **Permutation** reorders positions (Rail Fence, reverse).
+**Substitution vs permutation** — Substitution **replaces** symbols (affine, Vigenère). Permutation **reorders** positions (Rail Fence, reverse).
 
-**Sanitized key** — Only ASCII `A`–`Z` from the typed keyword, in order; at least one letter required.
+**Keyword (`K`)** — The alphabetic secret the user types; only `A`–`Z` are kept, in order. At least one letter is required.
+
+**Numeric second parameter (`r` / `rails`)** — An integer **`≥ 2`** that fixes the Rail Fence geometry (how many rails). It is **not** part of Vigenère; it must match between encrypt and decrypt. The code names this argument **`rails`**; the menu calls it a **numeric key for the extra layer** so it is clearly separate from the keyword.
 
 ---
 
-## How the pipeline works
+## End-to-end pipeline
 
-**Encrypt chain:** remove spaces → affine substitution → Vigenère → Rail Fence (**`rails`** ≥ 2) → reverse entire string.
+**Encrypt:** strip spaces → affine substitution → Vigenère → Rail Fence using **`r`** rows → reverse entire string.
 
-**Decrypt chain (inverse order):** reverse → Rail Fence decode → Vigenère decrypt → inverse affine.
+**Decrypt:** reverse → Rail Fence decode with the **same `r`** → Vigenère decrypt → inverse affine.
 
-You must use the **same** Vigenère key **and** the **same `rails`** value when decrypting. Default in the menu is **`rails = 3`** if you press Enter.
+**What changes per letter:** Affine and Vigenère only alter ASCII **`A`–`Z`** (treated as uppercase). Other characters are unchanged by those two layers but still move under Rail Fence and reverse.
 
-**What gets transformed:** Affine and Vigenère affect only ASCII **`A`–`Z`** (normalized to uppercase). Digits and punctuation pass through those stages unchanged but are still permuted by Rail Fence and reverse.
+**Validation:** Inputs are checked where needed (`str` types); keyword must retain at least one letter after filtering; **`r` must be ≥ 2** (implementation messages may say **“Numeric key…”**).
 
-**Checks:** string types where required; key must retain at least one letter; **`rails ≥ 2`**; modular inverse for fixed `a` values should always exist.
+---
 
-**Script:** A self-test runs at startup; the menu prompts for encrypt/decrypt/exit, and for **rails** on encrypt and decrypt.
+## Interactive program (`python substitution_vigenere_cipher.py`)
+
+1. A **self-check** runs once at startup (round-trip on a sample message).  
+2. The menu offers **Encrypt**, **Decrypt**, or **Exit**.  
+3. **Encrypt** asks for: phrase → **keyword** → **numeric key** for the extra layer (whole number ≥ 2; empty input means **3**). It prints a single line: **`Encryption: '…'`**.  
+4. **Decrypt** asks for: ciphertext → **same keyword** → **same numeric key** (empty = 3). It prints **`Decryption: '…'`** (space-free, Latin letters uppercase).  
+
+No intermediate pipeline or “blended match” lines are shown—only the final ciphertext or recovered plaintext.
 
 ---
 
 ## Spec vs this code
 
-Matches **[ALGORITHMS.md](ALGORITHMS.md)**. Letter detection uses a helper so only plain ASCII `A`–`Z` are treated as alphabet letters for the substitution and Vigenère steps.
+Behavior matches **[ALGORITHMS.md](ALGORITHMS.md)**. Letter handling uses a helper so only plain ASCII **`A`–`Z`** count as alphabet letters for affine and Vigenère (consistent with `FILTER_LETTERS` / uppercasing in the spec).
