@@ -95,19 +95,76 @@
 
 ### ALGORITHM: RAIL_FENCE_ENCODE(text, r)
 
-Requires integer **`r ≥ 2`**. Write each character of `text` along a zigzag across **`r`** rows (bounce at top and bottom rows). Concatenate row 0, then row 1, …, row **`r − 1`** (left to right within each row).
+Input: string `text`, integer **`r ≥ 2`**. Output: ciphertext string (same length as `text`).
+
+```
+1.  n ← LENGTH(text)
+2.  if n = 0 then return empty string
+3.  if r < 2 then error
+4.  rows[0], …, rows[r − 1] ← r empty lists (one per rail, top to bottom)
+5.  rail ← 0
+6.  dir_down ← true
+7.  for each character ch in text (in order) do
+8.      append ch to rows[rail]
+9.      if rail = 0 then
+10.         dir_down ← true
+11.     else if rail = r − 1 then
+12.         dir_down ← false
+13.     end if
+14.     if dir_down then rail ← rail + 1 else rail ← rail − 1
+15. end for
+16. return concatenation rows[0] + rows[1] + … + rows[r − 1]
+    (each row’s characters left to right in the order they were appended)
+```
 
 ---
 
 ### ALGORITHM: RAIL_FENCE_DECODE(cipher, r)
 
-Requires **`r ≥ 2`** and `LENGTH(cipher)` equals the encoded length. Reconstruct the zigzag slot pattern for that length, count how many characters belong on each rail, split `cipher` into those contiguous segments in row order, then read characters back in zigzag visit order to recover the string before Rail Fence encoding.
+Input: string `cipher`, integer **`r ≥ 2`**, where `cipher` was produced by `RAIL_FENCE_ENCODE` with the same `r` and same length. Output: decoded string.
+
+```
+1.  n ← LENGTH(cipher)
+2.  if n = 0 then return empty string
+3.  if r < 2 then error
+4.  pattern[0 … n − 1] ← empty array of rail indices
+5.  rail ← 0
+6.  dir_down ← true
+7.  for i ← 0 to n − 1 do
+8.      pattern[i] ← rail
+9.      if rail = 0 then
+10.         dir_down ← true
+11.     else if rail = r − 1 then
+12.         dir_down ← false
+13.     end if
+14.     if dir_down then rail ← rail + 1 else rail ← rail − 1
+15. end for
+16. for j ← 0 to r − 1 do
+17.     count[j] ← number of indices i such that pattern[i] = j
+18. end for
+19. pos ← 0
+20. for j ← 0 to r − 1 do
+21.     segment[j] ← substring of cipher from position pos of length count[j]
+22.     pos ← pos + count[j]
+23. end for
+24. pointer[0 … r − 1] ← all zero
+25. result ← empty string
+26. for i ← 0 to n − 1 do
+27.     j ← pattern[i]
+28.     ch ← character at segment[j][pointer[j]]
+29.     result ← result + ch
+30.     pointer[j] ← pointer[j] + 1
+31. end for
+32. return result
+```
 
 ---
 
 ### ALGORITHM: REVERSE(s)
 
-Returns the characters of `s` in reverse order.
+```
+1. return the string formed by listing characters of s from last index down to index 0
+```
 
 ---
 
