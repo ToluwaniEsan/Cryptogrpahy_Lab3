@@ -1,8 +1,8 @@
-# Cryptography Lab 3: Substitution + Vigenere + Rail Fence hybrid
+# Cryptography Lab 3: Cascade Polyalphabetic Transposition Cipher (CPT)
 
 ## Overview
 
-This project implements a **multi-stage classical cipher** in Python:
+This project implements the **Cascade Polyalphabetic Transposition Cipher (CPT Cipher)** — a **multi-stage classical cipher** in Python:
 
 1. **Length-keyed affine substitution** after removing spaces (`y = (a·x + b) mod 26`, with `a` invertible mod 26 and `b = n mod 26`).
 2. **Vigenère encryption** on that stream (repeating keyword; non-letters in the key ignored).
@@ -23,9 +23,10 @@ Formal pseudocode: **[ALGORITHMS.md](ALGORITHMS.md)**. Readable notes: **[EXPLAN
 
 ## Files
 
-- **[substitution_vigenere_cipher.py](substitution_vigenere_cipher.py)** — implementation and menu.
+- **[substitution_vigenere_cipher.py](substitution_vigenere_cipher.py)** — CPT implementation and menu.
 - **[ALGORITHMS.md](ALGORITHMS.md)** — pseudocode only.
 - **[EXPLANATION.md](EXPLANATION.md)** — short glossary and pipeline description.
+- **[CPT_CIPHER_PRESENTATION_PROMPT.md](CPT_CIPHER_PRESENTATION_PROMPT.md)** — ready-to-paste prompt for Gamma (or similar) to generate class slides.
 - **README.md** — this file.
 - **`.gitignore`** — bytecode caches.
 

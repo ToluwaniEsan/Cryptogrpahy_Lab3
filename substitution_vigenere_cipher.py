@@ -1,4 +1,4 @@
-"""Hybrid cipher: affine substitution, Vigenere, Rail Fence transposition, then full-string reverse."""
+"""CPT Cipher — Cascade Polyalphabetic Transposition: affine substitution, Vigenere, Rail Fence, then reverse."""
 
 from __future__ import annotations
 
@@ -277,7 +277,7 @@ def _parse_rails_input(raw: str, default: int = 3) -> int:
 
 
 def _run_menu() -> None:
-    print("Encrypt or decrypt messages below.")
+    print("CPT Cipher — encrypt or decrypt messages below.")
     while True:
         print()
         print("  1 = Encrypt")
