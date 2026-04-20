@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 
-def _as_latin_upper_letter(char: str) -> str | None:
-    """Return A–Z uppercase if char is a single Latin letter; else None."""
+def _uppercase_ascii_letter(char: str) -> str | None:
+    """Return uppercase A–Z if char is a single ASCII letter; else None."""
     if len(char) != 1:
         return None
     upper = char.upper()
@@ -39,7 +39,7 @@ def _substitution_on_clean(clean_text: str) -> str:
     b = n % 26
     out: list[str] = []
     for char in clean_text:
-        u = _as_latin_upper_letter(char)
+        u = _uppercase_ascii_letter(char)
         if u is not None:
             x = ord(u) - 65
             y = (a * x + b) % 26
@@ -57,7 +57,7 @@ def _substitution_inverse_on_clean(clean_text: str) -> str:
     a_inv = _mod_inverse(a)
     out: list[str] = []
     for char in clean_text:
-        u = _as_latin_upper_letter(char)
+        u = _uppercase_ascii_letter(char)
         if u is not None:
             y = ord(u) - 65
             x = (a_inv * (y - b)) % 26
@@ -77,7 +77,7 @@ def custom_substitution_cipher(text: str) -> str:
 def _sanitized_vigenere_key(key: str) -> str:
     if not isinstance(key, str):
         raise TypeError("key must be a str")
-    letters = "".join(ch.upper() for ch in key if _as_latin_upper_letter(ch) is not None)
+    letters = "".join(ch.upper() for ch in key if _uppercase_ascii_letter(ch) is not None)
     if not letters:
         raise ValueError("Vigenere key must contain at least one A-Z letter.")
     return letters
@@ -89,7 +89,7 @@ def _vigenere_apply(text: str, key_letters: str) -> str:
     out: list[str] = []
     key_index = 0
     for char in text:
-        u = _as_latin_upper_letter(char)
+        u = _uppercase_ascii_letter(char)
         if u is not None:
             shift = ord(key_letters[key_index % key_len]) - 65
             new_ord = (ord(u) - 65 + shift) % 26 + 65
@@ -106,7 +106,7 @@ def _vigenere_decrypt(text: str, key_letters: str) -> str:
     out: list[str] = []
     key_index = 0
     for char in text:
-        u = _as_latin_upper_letter(char)
+        u = _uppercase_ascii_letter(char)
         if u is not None:
             shift = ord(key_letters[key_index % key_len]) - 65
             new_ord = (ord(u) - 65 - shift) % 26 + 65
@@ -257,7 +257,7 @@ def _self_check_round_trip() -> None:
     c = hybrid_encrypt(plain, k, rails)
     d1 = hybrid_decrypt(c, k, rails)
     d2 = combined_hybrid_decrypt(c, k, rails)
-    expected = "".join(ch.upper() if _as_latin_upper_letter(ch) is not None else ch for ch in clean)
+    expected = "".join(ch.upper() if _uppercase_ascii_letter(ch) is not None else ch for ch in clean)
     assert d1 == d2 == expected
     assert c == combined_hybrid_encrypt(plain, k, rails)
     assert vigenere_decrypt(vigenere_encrypt("ABC", k), k) == "ABC"

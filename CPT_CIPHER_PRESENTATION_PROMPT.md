@@ -61,7 +61,7 @@ Short tagline suggestion: *“Multiple substitution and transposition layers in 
 
 ### Important internal helpers (optional “under the hood” slide)
 
-`_substitution_on_clean`, `_substitution_inverse_on_clean`, `_safe_multiplier`, `_mod_inverse`, `_sanitized_vigenere_key`, `_vigenere_apply`, `_vigenere_decrypt`, `_rail_fence_encode`, `_rail_fence_decode`, `_rail_pattern_indices`, `_reverse_layer`, `_as_latin_upper_letter`, `_self_check_round_trip`, `_run_menu`, `_parse_rails_input`.
+`_substitution_on_clean`, `_substitution_inverse_on_clean`, `_safe_multiplier`, `_mod_inverse`, `_sanitized_vigenere_key`, `_vigenere_apply`, `_vigenere_decrypt`, `_rail_fence_encode`, `_rail_fence_decode`, `_rail_pattern_indices`, `_reverse_layer`, `_uppercase_ascii_letter`, `_self_check_round_trip`, `_run_menu`, `_parse_rails_input`.
 
 ### High-level encrypt pseudocode (ENCRYPT — for one slide or appendix)
 

@@ -47,4 +47,4 @@ No intermediate pipeline or “blended match” lines are shown—only the final
 
 ## Spec vs this code
 
-Behavior matches **[ALGORITHMS.md](ALGORITHMS.md)**. Letter handling uses a helper so only plain ASCII **`A`–`Z`** count as alphabet letters for affine and Vigenère (consistent with `FILTER_LETTERS` / uppercasing in the spec).
+Behavior matches **[ALGORITHMS.md](ALGORITHMS.md)**. Letter handling uses **`_uppercase_ascii_letter`**: only plain ASCII **`A`–`Z`** count as alphabet letters for affine and Vigenère (same intent as `FILTER_LETTERS` / uppercasing in the spec).
