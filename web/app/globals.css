@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+:root {
+  /* Brighter gold system for UI text and accents */
+  --gold-deep: #a67c14;
+  --gold-mid: #e6bc2f;
+  --gold-light: #f7e9a8;
+  --mist: #f5f5f4;
+  --slate-panel: rgba(255, 255, 255, 0.42);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  color: #3f3f46;
+}

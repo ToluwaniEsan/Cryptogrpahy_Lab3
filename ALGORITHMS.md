@@ -1,48 +1,108 @@
-# Encryption
+# CPT Cipher — Algorithm Specification
 
-1. Let `clean` be the input string with every space (`U+0020`) removed. Let `n = len(clean)`.
+## Algorithm: Encrypt(P, K, r)
 
-2. Only characters that are ASCII `A`–`Z` are transformed (case-normalize to uppercase first). Index letters as `x ∈ {0,…,25}` with `A ↦ 0`, …, `Z ↦ 25`. All other characters are copied unchanged at every stage.
+```
+1.  clean ← TO_UPPERCASE(REMOVE_SPACES(P))
+2.  n ← LENGTH(clean)
 
-3. **Substitution:**  
-   Let `candidates = (1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25)`.  
-   `a = candidates[n mod 12]`  
-   `b = n mod 26`  
-   For each letter with index `x`:  
-   `y = (a·x + b) mod 26`  
-   Output the letter with index `y`.
+    // --- Affine Setup ---
+3.  candidates ← (1,3,5,7,9,11,15,17,19,21,23,25)
+4.  a ← candidates[n mod 12]
+5.  b ← n mod 26
 
-4. **Vigenère** on the substitution output:  
-   Let `key_letters` be the user key stripped to ASCII `A`–`Z` only, uppercase, preserving order (must be non-empty). Let `key_len = len(key_letters)`. Maintain `key_index`, initially `0`.  
-   For each character `c` in the string:
-   - If `c` is ASCII `A`–`Z` with index `p`: let `k` be the index of `key_letters[key_index mod key_len]` (`0…25`).  
-     `cipher_index = (p + k) mod 26`  
-     Emit that letter; then `key_index ← key_index + 1`.
-   - Else emit `c` unchanged (do not advance `key_index`).
+    // --- Step 1: Affine Transformation ---
+6.  T ← empty string
+7.  for each c in clean do
+8.      if c is a letter then
+9.          x ← ORD(c) − ORD('A')
+10.         y ← (a·x + b) mod 26
+11.         append CHAR(y + ORD('A')) to T
+12.     else
+13.         append c to T
 
-The final string after step 4 is the ciphertext.
+    // --- Step 2: Vigenère ---
+14. key ← TO_UPPERCASE(FILTER_LETTERS(K))
+15. key_index ← 0
+16. S ← empty string
+
+17. for each c in T do
+18.     if c is a letter then
+19.         p ← ORD(c) − ORD('A')
+20.         k ← ORD(key[key_index mod LENGTH(key)]) − ORD('A')
+21.         append CHAR((p + k) mod 26 + ORD('A')) to S
+22.         key_index ← key_index + 1
+23.     else
+24.         append c to S
+
+    // --- Step 3: Rail Fence (Integrated) ---
+25. rows[0…r−1] ← empty
+26. rail ← 0, dir_down ← true
+
+27. for each ch in S do
+28.     append ch to rows[rail]
+29.     if rail = 0 → dir_down ← true
+30.     else if rail = r−1 → dir_down ← false
+31.     rail ← rail + 1 if dir_down else rail − 1
+
+32. R ← concatenate all rows
+
+    // --- Step 4: Reverse ---
+33. C ← REVERSE(R)
+
+34. return C
+```
 
 ---
 
-# Decryption
+## Algorithm: Decrypt(C, K, r)
 
-1. Let `cipher` be the ciphertext string from encryption. Its length equals `n` above (same as cleaned plaintext length).
+```
+1.  R ← REVERSE(C)
+2.  n ← LENGTH(R)
 
-2. **Vigenère inverse:**  
-   Build `key_letters` exactly as in encryption from the user key.  
-   `key_index ← 0`.  
-   For each character `c`:
-   - If `c` is ASCII `A`–`Z` with index `q`: let `k` be the index of `key_letters[key_index mod key_len]`.  
-     `plain_index = (q − k) mod 26`  
-     Emit that letter; then `key_index ← key_index + 1`.
-   - Else emit `c` unchanged (do not advance `key_index`).
+    // --- Step 1: Rail Fence Decode (Integrated) ---
+3.  pattern[0…n−1]
+4.  rail ← 0, dir_down ← true
 
-3. **Inverse substitution** on that string (same `n = len(cipher)`):  
-   `a = candidates[n mod 12]` (same tuple as encryption)  
-   `b = n mod 26`  
-   Find integer `a_inv ∈ {1,…,25}` such that `(a · a_inv) mod 26 = 1`.  
-   For each letter with index `y`:  
-   `x = (a_inv · (y − b)) mod 26`  
-   Emit the letter with index `x`. Non-letters unchanged.
+5.  for i = 0 → n−1 do
+6.      pattern[i] ← rail
+7.      if rail = 0 → dir_down ← true
+8.      else if rail = r−1 → dir_down ← false
+9.      rail ← rail + 1 if dir_down else rail − 1
 
-The result is the recovered space-free plaintext (uppercase for Latin letters that were letters in the original).
+10. count rails
+11. split R into segments per rail
+12. reconstruct S using pattern
+
+    // --- Step 2: Vigenère Decode ---
+13. key ← TO_UPPERCASE(FILTER_LETTERS(K))
+14. key_index ← 0
+15. T ← empty string
+
+16. for each c in S do
+17.     if c is letter then
+18.         q ← ORD(c) − ORD('A')
+19.         k ← ORD(key[key_index mod LENGTH(key)]) − ORD('A')
+20.         append CHAR((q − k) mod 26 + ORD('A')) to T
+21.         key_index ← key_index + 1
+22.     else
+23.         append c to T
+
+    // --- Step 3: Affine Inverse ---
+24. candidates ← (1,3,5,7,9,11,15,17,19,21,23,25)
+25. a ← candidates[n mod 12]
+26. b ← n mod 26
+27. a_inv ← MODULAR_INVERSE(a, 26)
+
+28. P ← empty string
+29. for each c in T do
+30.     if c is letter then
+31.         y ← ORD(c) − ORD('A')
+32.         x ← (a_inv · (y − b)) mod 26
+33.         append CHAR(x + ORD('A')) to P
+34.     else
+35.         append c to P
+
+36. return P
+```

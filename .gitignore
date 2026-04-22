@@ -1,2 +1,7 @@
 __pycache__/
 *.pyc
+
+# Next.js frontend (see web/README or root README)
+web/node_modules/
+web/.next/
+web/out/

@@ -1,96 +1,100 @@
-# Cryptography Lab 3: Substitution + Vigenere hybrid
+# Cryptography Lab 3: Cascade Polyalphabetic Transposition Cipher (CPT)
 
 ## Overview
 
-This project implements a **two-stage classical cipher** in Python:
+This project implements the **Cascade Polyalphabetic Transposition Cipher (CPT Cipher)** — a **multi-stage classical cipher** in Python:
 
-1. **Length-keyed affine substitution** on the message with all spaces removed. Letters `A`–`Z` are mapped with `y = (a·x + b) mod 26` (with `x,y` in `0..25`), where `a` is chosen from fixed units modulo 26 so **decryption always exists**, and `b = n mod 26` for `n =` length of the cleaned string. Non-letters pass through unchanged.
+1. **Length-keyed affine substitution** after removing spaces (`y = (a·x + b) mod 26`, with `a` invertible mod 26 and `b = n mod 26`).
+2. **Vigenère encryption** on that stream (repeating keyword; non-letters in the key ignored).
+3. **Rail Fence transposition** with **`rails ≥ 2`** (zigzag write, row-major read).
+4. **Full string reverse** as a final permutation.
 
-2. **Vigenere encryption** on the substitution output, using a repeating keyword (letters `A`–`Z` only; other characters in the key are ignored).
+**Decryption** reverses those steps: un-reverse → Rail Fence decode → Vigenère decrypt → inverse affine.
 
-**Decryption** reverses that order: Vigenere decrypt, then inverse substitution. You can use either a **pipeline** of functions or **combined** encrypt/decrypt helpers.
-
-Formal step-by-step algorithms (encryption and decryption only): **[ALGORITHMS.md](ALGORITHMS.md)**.
+Formal pseudocode: **[ALGORITHMS.md](ALGORITHMS.md)**. Readable notes: **[EXPLANATION.md](EXPLANATION.md)**.
 
 ## Features
 
-- **Substitution stage**: affine cipher over `Z/26Z` with length-dependent `a` and `b`; always invertible for any message length (no `gcd(n, 26)` restriction).
-- **Vigenere stage**: standard additive cipher over `A`–`Z`; the key index advances only for ciphertext letters that are encrypted (non-letters pass through and do not consume key material).
-- **Decrypt API**: `vigenere_decrypt`, `decrypt_substitution_then_vigenere`, `combined_substitution_vigenere_decrypt` (combined decrypt does not call `vigenere_decrypt`; it mirrors the encrypt structure).
-- **Two API styles** for encrypt: `custom_substitution_cipher` + `vigenere_encrypt`, or `combined_substitution_vigenere_encrypt`.
-- **Interactive menu** (`python substitution_vigenere_cipher.py`): choose **Encrypt**, **Decrypt**, or **Exit**; after each result you return to the menu until you exit.
-- **Robust letter handling**: only ASCII `A`–`Z` are transformed; other Unicode letters are copied unchanged so behavior stays predictable for coursework.
+- **Two substitution-style layers:** affine + Vigenère.
+- **Two permutation-style layers:** Rail Fence + full reverse (meets typical “substitution + permutation” lab wording when both are required).
+- **Public API:** `hybrid_encrypt` / `hybrid_decrypt`, plus `combined_hybrid_encrypt` / `combined_hybrid_decrypt` (inlined Vigenère, same results).
+- **Utilities:** `custom_substitution_cipher`, `vigenere_encrypt`, `vigenere_decrypt` for building blocks.
+- **Interactive menu** — keyword, then a **numeric “extra layer” key** (integer ≥ 2, default **3**); decrypt must reuse the **same keyword and same number**. Output is only **`Encryption:`** / **`Decryption:`** lines.
 
 ## Files
 
-- **[substitution_vigenere_cipher.py](substitution_vigenere_cipher.py)**: affine substitution, Vigenere, combined encrypt/decrypt, interactive menu (replaces the older `substitution.py` prototype).
-- **[ALGORITHMS.md](ALGORITHMS.md)**: encryption and decryption algorithms only (no commentary).
-- **README.md**: This file.
-- **`.gitignore`**: ignores Python bytecode caches.
+- **[cpt_cipher.py](cpt_cipher.py)** — CPT implementation and menu.
+- **[cipher_bridge.py](cipher_bridge.py)** — JSON stdin/stdout adapter used by the Next.js API (imports `cpt_cipher` unchanged).
+- **`web/`** — Next.js UI (gold / white / grey frosted layout) calling Python via `/api/cipher`.
+- **[ALGORITHMS.md](ALGORITHMS.md)** — pseudocode only.
+- **[EXPLANATION.md](EXPLANATION.md)** — short glossary and pipeline description.
+- **[CPT_CIPHER_PRESENTATION_PROMPT.md](CPT_CIPHER_PRESENTATION_PROMPT.md)** — ready-to-paste prompt for Gamma (or similar) to generate class slides.
+- **README.md** — this file.
+- **`.gitignore`** — bytecode caches and Next.js build artifacts under `web/`.
 
-See **[ALGORITHMS.md](ALGORITHMS.md)** for full symbolic steps. Summary:
+## Mathematical summary
 
-### Substitution (after removing spaces)
-
-Let `n` be the length of the cleaned string, `x` the numerical value of a plaintext letter (`A`→0, …, `Z`→25). Pick multiplier `a = candidates[n mod 12]` from `(1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25)` (all units mod 26). Let `b = n mod 26`.
-
-`y = (a·x + b) mod 26`, then map `y` back to `A`–`Z`.
-
-Decryption: `x = (a⁻¹·(y − b)) mod 26` where `a⁻¹` is the modular inverse of `a` modulo 26.
-
-If `n == 0`, the result is the empty string.
-
-### Vigenere
-
-Encryption: `C = chr((ord(P) - 65 + ord(K) - 65) mod 26 + 65)`.
-
-Decryption: `P = chr((ord(C) - 65 - ord(K) - 65) mod 26 + 65)` (same key stepping as encrypt).
+- **Affine:** `a = candidates[n mod 12]` from `(1, 3, …, 25)`, `b = n mod 26`; decrypt with `a⁻¹` mod 26.
+- **Vigenère:** add/subtract key shifts mod 26; key index advances only on `A`–`Z` ciphertext letters.
+- **Rail Fence / reverse:** see **[ALGORITHMS.md](ALGORITHMS.md)**.
 
 ## Running the program
 
 ```bash
-python substitution_vigenere_cipher.py
+python cpt_cipher.py
 ```
 
-On startup a small **self-check** runs (round-trip for a sample message, including length 10). Then you see a menu:
+Self-check runs first, then the menu (Encrypt / Decrypt / Exit). When decrypting, use the **same keyword** and **same numeric key** (second number) as for encryption; empty numeric input defaults to **3** on both sides.
 
-1. **Encrypt** — enter phrase and key; prints substitution-only output, pipeline ciphertext, blended ciphertext, and whether encrypt paths match.
-2. **Decrypt** — enter ciphertext and key; prints recovered text (**spaces are not restored**; letter case is uppercase for Latin letters). Also reports whether combined decrypt matches the pipeline.
-3. **Exit** — quit the program.
+### Web UI (Next.js)
 
-You can also type `encrypt` / `decrypt` / `exit` (case-insensitive) instead of `1` / `2` / `3`.
+Requires **Node.js**, **npm**, and **Python 3** on your machine (the API runs `cipher_bridge.py`, which imports `cpt_cipher` from the repository root).
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). The dev server’s working directory is `web/`, so the API resolves the parent folder as the project root for Python.
+
+- Override the Python executable with **`PYTHON_EXE`** (e.g. `py -3` on Windows) if `python` is not on `PATH`.
+- If you start Next.js from a directory other than `web/`, set **`CIPHER_REPO_ROOT`** to the folder that contains **`cipher_bridge.py`** and **`cpt_cipher.py`**.
+
+Serverless hosts (e.g. Vercel) typically **cannot** spawn a local Python interpreter; use this stack **locally** or deploy to a VM/container that has both Node and Python.
+
 
 ## Usage example
 
 ```python
-from substitution_vigenere_cipher import (
-    encrypt_substitution_then_vigenere,
-    decrypt_substitution_then_vigenere,
-    combined_substitution_vigenere_encrypt,
-    combined_substitution_vigenere_decrypt,
+from cpt_cipher import (
+    hybrid_encrypt,
+    hybrid_decrypt,
+    combined_hybrid_encrypt,
+    combined_hybrid_decrypt,
 )
 
 plain = "Hello World"
 key = "KEY"
+rails = 3
 
-cipher = encrypt_substitution_then_vigenere(plain, key)
-assert cipher == combined_substitution_vigenere_encrypt(plain, key)
+cipher = hybrid_encrypt(plain, key, rails)
+assert cipher == combined_hybrid_encrypt(plain, key, rails)
 
-recovered = decrypt_substitution_then_vigenere(cipher, key)
-assert recovered == combined_substitution_vigenere_decrypt(cipher, key)
+recovered = hybrid_decrypt(cipher, key, rails)
+assert recovered == combined_hybrid_decrypt(cipher, key, rails)
 assert recovered == "HELLOWORLD"  # spaces not restored; Latin letters uppercase
 ```
 
 ## Edge cases and errors
 
-- **`TypeError`**: `text`, `ciphertext`, or `key` is not a `str` where a string is required.
-- **`ValueError`**: Vigenere key contains no `A`–`Z` letters after sanitizing (or internal modular inverse failure, which should not occur for the fixed `a` values).
-- **Empty input**: Produces empty ciphertext; substitution length `n` is zero.
-- **Spaces and case**: Spaces are removed before encryption and are **not** recovered on decrypt. Latin letters are recovered in **uppercase**.
+- **`TypeError`**: wrong types for text/key where checked.
+- **`ValueError`**: empty keyword after letter filtering; second parameter **< 2** or not a valid integer where a **numeric key** is read.
+- **Spaces / case**: spaces stripped before encrypt and not restored; Latin letters decrypt to **uppercase**.
 
 ## Security note
 
-This code is **for education only**. Classical ciphers are not suitable for protecting real data.
+Educational use only.
 
 ## Author
 
