@@ -24,11 +24,13 @@ Formal pseudocode: **[ALGORITHMS.md](ALGORITHMS.md)**. Readable notes: **[EXPLAN
 ## Files
 
 - **[cpt_cipher.py](cpt_cipher.py)** — CPT implementation and menu.
+- **[cipher_bridge.py](cipher_bridge.py)** — JSON stdin/stdout adapter used by the Next.js API (imports `cpt_cipher` unchanged).
+- **`web/`** — Next.js UI (gold / white / grey frosted layout) calling Python via `/api/cipher`.
 - **[ALGORITHMS.md](ALGORITHMS.md)** — pseudocode only.
 - **[EXPLANATION.md](EXPLANATION.md)** — short glossary and pipeline description.
 - **[CPT_CIPHER_PRESENTATION_PROMPT.md](CPT_CIPHER_PRESENTATION_PROMPT.md)** — ready-to-paste prompt for Gamma (or similar) to generate class slides.
 - **README.md** — this file.
-- **`.gitignore`** — bytecode caches.
+- **`.gitignore`** — bytecode caches and Next.js build artifacts under `web/`.
 
 ## Mathematical summary
 
@@ -43,6 +45,24 @@ python cpt_cipher.py
 ```
 
 Self-check runs first, then the menu (Encrypt / Decrypt / Exit). When decrypting, use the **same keyword** and **same numeric key** (second number) as for encryption; empty numeric input defaults to **3** on both sides.
+
+### Web UI (Next.js)
+
+Requires **Node.js**, **npm**, and **Python 3** on your machine (the API runs `cipher_bridge.py`, which imports `cpt_cipher` from the repository root).
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). The dev server’s working directory is `web/`, so the API resolves the parent folder as the project root for Python.
+
+- Override the Python executable with **`PYTHON_EXE`** (e.g. `py -3` on Windows) if `python` is not on `PATH`.
+- If you start Next.js from a directory other than `web/`, set **`CIPHER_REPO_ROOT`** to the folder that contains **`cipher_bridge.py`** and **`cpt_cipher.py`**.
+
+Serverless hosts (e.g. Vercel) typically **cannot** spawn a local Python interpreter; use this stack **locally** or deploy to a VM/container that has both Node and Python.
+
 
 ## Usage example
 
